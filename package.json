@@ -1,0 +1,16 @@
+{
+  "name": "listener",
+  "version": "1.0.0",
+  "description": "",
+  "main": "listener.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "jarmo",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "mongoose": "^7.5.3",
+    "mqtt": "^5.0.5"
+  }
+}
