@@ -5,11 +5,10 @@ import CONFIG from './utils/config.js'
 import AUTH_CONFIG from './utils/authentication.js'
 
 import connectDb from './utils/connectDb.js'
-// import startMqttListener from './listener.js'
+import mqttListener from './mqttlistener.js'
 
 dotenv.config()
 
-// Connect to MongoDB
 connectDb()
 
 const client = mqtt.connect(CONFIG.MQTT_GATEWAY_URI, {
@@ -33,3 +32,5 @@ client.on('error', err => {
   client.end()
   process.exit(1)
 })
+
+mqttListener(client)
