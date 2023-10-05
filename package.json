@@ -4,6 +4,8 @@
   "description": "",
   "main": "listener.js",
   "scripts": {
+    "start": "node listener.js",
+    "dev": "nodemon listener.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "jarmo",
@@ -11,6 +13,10 @@
   "dependencies": {
     "dotenv": "^16.3.1",
     "mongoose": "^7.5.3",
-    "mqtt": "^5.0.5"
+    "mqtt": "^5.0.5",
+    "validator": "^13.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   }
 }
