@@ -1,9 +1,22 @@
 import CONFIG from './config.js'
-import { connect } from 'mongoose'
+import mongoose from 'mongoose'
 
-const connectDB = async function connectToDatabase() {
+const shutdown = async () => {
+  console.log('Shutting down the application...')
+
   try {
-    await connect(CONFIG.MONGO_URI, {
+    await mongoose.connection.close()
+    console.log('Database connection closed.')
+  } catch (err) {
+    console.error('Error closing the database connection:', err)
+  }
+
+  process.exit(1)
+}
+
+const connectDB = async () => {
+  try {
+    await mongoose.connect(CONFIG.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true
     })
@@ -19,6 +32,7 @@ const connectDB = async function connectToDatabase() {
     } else {
       console.error('Error connecting to the database:', error.message)
     }
+    await shutdown()
   }
 }
 
