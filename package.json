@@ -5,8 +5,8 @@
   "type": "module",
   "main": "listener.js",
   "scripts": {
-    "start": "node listener.js",
-    "dev": "nodemon listener.js",
+    "start": "node index.js",
+    "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "jarmo",
