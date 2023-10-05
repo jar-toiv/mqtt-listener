@@ -12,13 +12,11 @@ const MQTT_PASSWORD = 'admin';
 function flatterJsonData(obj, prefix = '', depth = 0, maxDepth = 10) {
   let flattened = {};
 
-  // Check for max depth
   if (depth > maxDepth) {
     return { [prefix.slice(0, -1)]: obj }; // Return object as-is
   }
 
   for (let key in obj) {
-    // Handle non-string keys
     if (typeof key !== 'string') {
       key = String(key);
     }
