@@ -1,6 +1,6 @@
 // import connect from 'mongoose'
-import flattenJsonData from './utils/flattenJsonData.js'
-import WaterflowMeter from './models/waterflowMeter.js'
+import flattenJsonData from '../utils/flattenJsonData.js'
+import WaterflowMeter from '../models/waterflowMeter.js'
 
 //! SUBSCRIBE
 const mqttListener = client => {

@@ -5,7 +5,6 @@ import CONFIG from './utils/config.js'
 import AUTH_CONFIG from './utils/authentication.js'
 
 import connectDb from './utils/connectDb.js'
-import mqttListener from './mqttlistener.js'
 
 dotenv.config()
 
@@ -32,5 +31,3 @@ client.on('error', err => {
   client.end()
   process.exit(1)
 })
-
-mqttListener(client)

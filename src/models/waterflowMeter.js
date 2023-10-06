@@ -8,9 +8,9 @@ const WaterflowMeterSchema = new mongoose.Schema(
       type: String,
       required: true
     },
-    gatewayIdentifier: {
-      type: String,
-      default: 'Teltonika_TRB143_Id_1'
+    gatewayId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Gateway'
     },
     connection: {
       type: String,
@@ -141,7 +141,6 @@ WaterflowMeterSchema.virtual('id').get(function () {
   return this._id.toHexString()
 })
 
-//! POST OR PREHOOK ?
 WaterflowMeterSchema.post('findOneAndUpdate', function (doc) {
   const warningMessages = {
     'currentEventFlags.noFlow': 'No Flow detected',
