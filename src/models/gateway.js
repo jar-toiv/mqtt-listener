@@ -4,7 +4,8 @@ const gatewaySchema = new mongoose.Schema(
   {
     gatewayId: {
       type: String,
-      required: true
+      required: true,
+      default: 'Teltonika_TRB143_1'
     },
     deviceIds: [
       {
@@ -12,7 +13,17 @@ const gatewaySchema = new mongoose.Schema(
         ref: 'WaterflowMeter',
         validate: [arrayDeviceLimit, `{PATH} exceeds the limit of 249 meters.`]
       }
-    ]
+    ],
+    topic: {
+      type: String,
+      required: true,
+      validate: {
+        validator: function (v) {
+          return /^([^/]+)\/([^/]+)\/([^/]+)\/([^/]+)$/.test(v)
+        },
+        message: props => `${props.value} is not a valid topic structure!`
+      }
+    }
   },
   {
     collection: 'gateways',
