@@ -1,5 +1,6 @@
 import dotenv from 'dotenv'
 import mqtt from 'mqtt'
+import app from './app.js'
 
 import CONFIG from './utils/config.js'
 import AUTH_CONFIG from './utils/authentication.js'
@@ -31,3 +32,5 @@ client.on('error', err => {
   client.end()
   process.exit(1)
 })
+
+app(client)
