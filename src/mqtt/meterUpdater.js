@@ -5,7 +5,7 @@ const meterUpdater = async flattenedPayload => {
     const updatedMeter = await WaterflowMeter.findOneAndUpdate(
       { deviceId: flattenedPayload.deviceId },
       flattenedPayload,
-      { new: true, upsert: true }
+      { new: true, upsert: true, runValidators: true }
     )
 
     if (updatedMeter) {
