@@ -6,7 +6,7 @@ const WaterflowMeterSchema = new mongoose.Schema(
   {
     deviceId: {
       type: String,
-      required: true
+      required: [true, 'Device ID is required']
     },
     gatewayId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -159,7 +159,7 @@ WaterflowMeterSchema.post('findOneAndUpdate', function (doc) {
   }
 
   for (let flag in warningMessages) {
-    console.log(`Checking flag: ${flag} with value: ${doc.get(flag)}`)
+    // console.log(`Checking flag: ${flag} with value: ${doc.get(flag)}`)
     if (doc.get(flag)) {
       console.warn(
         `Warning: ${warningMessages[flag]} from sensor ID: ${doc.deviceId}`
