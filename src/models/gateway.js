@@ -7,13 +7,15 @@ const gatewaySchema = new mongoose.Schema(
       required: true,
       default: 'Teltonika_TRB143_1'
     },
-    deviceIds: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'WaterflowMeter',
-        validate: [arrayDeviceLimit, `{PATH} exceeds the limit of 249 meters.`]
-      }
-    ],
+    deviceIds: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'WaterflowMeter'
+        }
+      ],
+      validate: [arrayDeviceLimit, `{PATH} exceeds the limit of 249 meters.`]
+    },
     topic: {
       type: String,
       required: true,
@@ -43,7 +45,7 @@ gatewaySchema.virtual('id').get(function () {
 })
 
 function arrayDeviceLimit(val) {
-  return val.lenght <= 249
+  return val.length <= 249
 }
 
 const Gateway = mongoose.model('Gateway', gatewaySchema)

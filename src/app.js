@@ -10,9 +10,6 @@ const app = client => {
 
   client.on('message', async (topic, message) => {
     try {
-      //gateway sends Topic string to gateway collection
-      gateway(topic)
-
       const payloadStr = message.toString()
       // console.log('Received payload:', payloadStr)
       const payload = JSON.parse(payloadStr)
@@ -23,8 +20,9 @@ const app = client => {
         console.error('Missing deviceId in the payload')
         return
       }
-      // meter sends flattened JSON object to meters collection
+
       meter(flattenedPayload)
+      gateway(topic, flattenedPayload)
     } catch (error) {
       console.error('ERROR', error.message)
     }
