@@ -2,8 +2,8 @@ import dotenv from 'dotenv'
 import mqtt from 'mqtt'
 import app from './app.js'
 
+import AUTHENTICATION from './utils/authentication.js'
 import CONFIG from './utils/config.js'
-import AUTH_CONFIG from './utils/authentication.js'
 
 import connectDb from './utils/connectDb.js'
 
@@ -12,8 +12,8 @@ dotenv.config()
 connectDb()
 
 const client = mqtt.connect(CONFIG.MQTT_GATEWAY_URI, {
-  username: AUTH_CONFIG.MQTT_USERNAME,
-  password: AUTH_CONFIG.MQTT_PASSWORD
+  username: AUTHENTICATION.MQTT_USERNAME,
+  password: AUTHENTICATION.MQTT_PASSWORD
 })
 
 client.on('connect', () => {
