@@ -54,11 +54,3 @@ function arrayDeviceLimit(val) {
 
 const Gateway = mongoose.model('Gateway', gatewaySchema)
 export default Gateway
-
-gatewaySchema.add({
-  locationId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Location'
-  }
-  // rest of the properties remain unchanged
-})
