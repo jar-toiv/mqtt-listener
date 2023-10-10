@@ -1,6 +1,8 @@
 import flattenJsonData from './utils/flattenJsonData.js'
 import meter from './mqtt/meterUpdater.js'
 import gateway from './mqtt/gatewayUpdater.js'
+import location from './mqtt/locationUpdater.js'
+import site from './mqtt/siteUpdater.js'
 
 const app = client => {
   client.on('connect', () => {
@@ -23,6 +25,8 @@ const app = client => {
 
       meter(flattenedPayload)
       gateway(topic, flattenedPayload)
+      location(topic)
+      site(topic)
     } catch (error) {
       console.error('ERROR', error.message)
     }
