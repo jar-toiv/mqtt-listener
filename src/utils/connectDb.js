@@ -6,6 +6,7 @@ const shutdown = async () => {
 
   try {
     await mongoose.connection.close()
+
     console.log('Database connection closed.')
   } catch (err) {
     console.error('Error closing the database connection:', err)
@@ -20,6 +21,7 @@ const connectDB = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true
     })
+
     console.log('Successfully connected to the database')
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
