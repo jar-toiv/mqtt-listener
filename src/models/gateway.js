@@ -3,9 +3,13 @@ import mongoose from 'mongoose'
 const gatewaySchema = new mongoose.Schema(
   {
     gatewayId: {
-      type: String,
+      type: String, //! Huono idea?//! Huono idea?//! Huono idea?//! Huono idea?//! Huono idea?
       required: true,
       default: 'Teltonika_TRB143_1'
+    },
+    locationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Location'
     },
     deviceIds: {
       type: [
@@ -50,3 +54,11 @@ function arrayDeviceLimit(val) {
 
 const Gateway = mongoose.model('Gateway', gatewaySchema)
 export default Gateway
+
+gatewaySchema.add({
+  locationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Location'
+  }
+  // rest of the properties remain unchanged
+})
