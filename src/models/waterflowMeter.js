@@ -9,7 +9,7 @@ const WaterflowMeterSchema = new mongoose.Schema(
       required: [true, 'Device ID is required']
     },
     gatewayId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId, //! TOIMIIKO TÄMÄ ?
       ref: 'Gateway'
     },
     connection: {
