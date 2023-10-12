@@ -1,8 +1,4 @@
-import flattenJsonData from './utils/flattenJsonData.js'
-import meter from './mqtt/meterUpdater.js'
-import gateway from './mqtt/gatewayUpdater.js'
-import location from './mqtt/locationUpdater.js'
-import site from './mqtt/siteUpdater.js'
+import processMqtt from './mqtt/processMqtt.js'
 
 const app = client => {
   client.on('connect', () => {
@@ -12,21 +8,7 @@ const app = client => {
 
   client.on('message', async (topic, message) => {
     try {
-      const payloadStr = message.toString()
-      // console.log('Received payload:', payloadStr)
-      const payload = JSON.parse(payloadStr)
-      const flattenedPayload = flattenJsonData(payload)
-      //   console.log('Flattened Payload CHECK:', flattenedPayload)
-
-      if (!flattenedPayload.deviceId) {
-        console.error('Missing deviceId in the payload')
-        return
-      }
-
-      meter(flattenedPayload)
-      gateway(topic, flattenedPayload)
-      location(topic)
-      site(topic)
+      processMqtt(topic, message)
     } catch (error) {
       console.error('ERROR', error.message)
     }

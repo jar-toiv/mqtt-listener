@@ -1,15 +1,27 @@
 import mongoose from 'mongoose'
+import logger from '../utils/logger.js'
 
-const CONNECTION_TYPES = ['wired', 'wireless']
+const CONNECTION_TYPES = ['wireless', 'wired']
 
-const WaterflowMeterSchema = new mongoose.Schema(
+const WaterflowSchema = new mongoose.Schema(
   {
-    deviceId: {
+    meterId: {
       type: String,
-      required: [true, 'Device ID is required']
+      required: [true, 'Meter Id is required']
+    },
+    meterName: {
+      type: String,
+      required: true,
+      trim: true,
+      validate: {
+        validator: function (value) {
+          return typeof value === 'string' && value.trim().length > 0
+        },
+        message: props => `Invalid meterName provided: ${props.value}`
+      }
     },
     gatewayId: {
-      type: mongoose.Schema.Types.ObjectId, //! TOIMIIKO TÄMÄ ?
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'Gateway'
     },
     connection: {
@@ -24,7 +36,7 @@ const WaterflowMeterSchema = new mongoose.Schema(
       type: String,
       default: 'waterflow'
     },
-    deviceDateTime: {
+    meterDateTime: {
       type: Date,
       required: true
     },
@@ -53,74 +65,42 @@ const WaterflowMeterSchema = new mongoose.Schema(
         message: 'Flow rate is zero. Action might be required.'
       }
     },
-    'currentEventFlags.maximumFlow': {
-      type: Boolean,
-      default: false
+    currentEventFlags: {
+      maximumFlow: { type: Boolean, default: false },
+      minimumFlow: { type: Boolean, default: false },
+      reverseFlow: { type: Boolean, default: false },
+      noFlow: { type: Boolean, default: false },
+      leakage: { type: Boolean, default: false },
+      meterDisconnection: { type: Boolean, default: false },
+      magneticFieldDetection: { type: Boolean, default: false },
+      strongLightDetection: { type: Boolean, default: false },
+      lowBattery: { type: Boolean, default: false },
+      tipError: { type: Boolean, default: false },
+      detectorFault: { type: Boolean, default: false },
+      processorReset: { type: Boolean, default: false }
     },
-    'currentEventFlags.minimumFlow': {
-      type: Boolean,
-      default: false
-    },
-    'currentEventFlags.reverseFlow': {
-      type: Boolean,
-      default: false
-    },
-    'currentEventFlags.noFlow': {
-      type: Boolean,
-      default: false
-    },
-    'currentEventFlags.leakage': {
-      type: Boolean,
-      default: false
-    },
-    'currentEventFlags.deviceDisconnection': {
-      type: Boolean,
-      default: false
-    },
-    'currentEventFlags.magneticFieldDetection': {
-      type: Boolean,
-      default: false
-    },
-    'currentEventFlags.strongLightDetection': {
-      type: Boolean,
-      default: false
-    },
-    'currentEventFlags.lowBattery': {
-      type: Boolean,
-      default: false
-    },
-    'currentEventFlags.tipError': {
-      type: Boolean,
-      default: false
-    },
-    'currentEventFlags.detectorFault': {
-      type: Boolean,
-      default: false
-    },
-    'currentEventFlags.processorReset': {
-      type: Boolean,
-      default: false
-    },
-    'diagnostics.optics': {
-      type: String,
-      validate: {
-        validator: function (v) {
-          return v === 'Normal'
-        },
-        message: 'Optics diagnostics not normal. Potential blockage or mist.'
-      }
-    },
-    'diagnostics.oscillator': {
-      type: String
-    },
-    'diagnostics.powerSupply': {
-      type: String,
-      validate: {
-        validator: function (v) {
-          return v === 'M-Bus'
-        },
-        message:
-          'Power supply issue detected. Potential problem with publisher.'
+    diagnostics: {
+      optics: {
+        type: String,
+        validate: {
+          validator: function (v) {
+            return v === 'Normal'
+          },
+          message: 'Optics diagnostics not normal. Potential blockage or mist.'
+        }
+      },
+      oscillator: {
+        type: String
+      },
+      powerSupply: {
+        type: String,
+        validate: {
+          validator: function (v) {
+            return v === 'M-Bus'
+          },
+          message:
+            'Power supply issue detected. Potential problem with publisher.'
+        }
       }
     }
   },
@@ -136,38 +116,26 @@ const WaterflowMeterSchema = new mongoose.Schema(
     }
   }
 )
-
-WaterflowMeterSchema.virtual('id').get(function () {
+WaterflowSchema.virtual('id').get(function () {
   return this._id.toHexString()
 })
 
-WaterflowMeterSchema.post('findOneAndUpdate', function (doc) {
-  const warningMessages = {
-    'currentEventFlags.noFlow': 'No Flow detected',
-    'currentEventFlags.leakage': 'Possible leakage in system',
-    'currentEventFlags.deviceDisconnection': 'Device Disconnection detected',
-    'currentEventFlags.magneticFieldDetection':
-      'Magnetic Field Detection detected',
-    'currentEventFlags.strongLightDetection': 'Strong Light Detection detected',
-    'currentEventFlags.lowBattery': 'Low Battery detected',
-    'currentEventFlags.tipError': 'Tip Error detected',
-    'currentEventFlags.detectorFault': 'Detector Fault detected',
-    'currentEventFlags.processorReset': 'Processor Reset detected',
-    'currentEventFlags.maximumFlow': 'Maximum Flow detected',
-    'currentEventFlags.minimumFlow': 'Minimum Flow detected',
-    'currentEventFlags.reverseFlow': 'Reverse Flow detected'
-  }
-
-  for (let flag in warningMessages) {
-    // console.log(`Checking flag: ${flag} with value: ${doc.get(flag)}`)
-    if (doc.get(flag)) {
-      console.warn(
-        `Warning: ${warningMessages[flag]} from sensor ID: ${doc.deviceId}`
+WaterflowSchema.post('save', function (doc) {
+  const flags = doc.currentEventFlags
+  const meterId = doc.meterId
+  for (let flag in flags) {
+    if (
+      Object.prototype.hasOwnProperty.call(flags, flag) &&
+      typeof flags[flag] === 'boolean' &&
+      flags[flag] === true
+    ) {
+      logger.warn(
+        `ALERT: The flag for ${flag} is raised for Meter ID: ${meterId}`
       )
     }
   }
 })
 
-const WaterflowMeter = mongoose.model('WaterflowMeter', WaterflowMeterSchema)
+const WaterflowMeter = mongoose.model('WaterflowMeter', WaterflowSchema)
 
-export default WaterflowMeter
+export { WaterflowMeter }

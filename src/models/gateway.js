@@ -2,33 +2,33 @@ import mongoose from 'mongoose'
 
 const gatewaySchema = new mongoose.Schema(
   {
-    gatewayId: {
-      type: String, //! Huono idea?//! Huono idea?//! Huono idea?//! Huono idea?//! Huono idea?
+    gatewayName: {
+      type: String,
       required: true,
-      default: 'Teltonika_TRB143_1'
+      trim: true,
+      validate: {
+        validator: function (value) {
+          return typeof value === 'string' && value.trim().length > 0
+        },
+        message: props => `Invalid gatewayName provided: ${props.value}`
+      }
     },
-    locationId: {
+    locationName: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Location'
     },
-    deviceIds: {
+    meterIds: {
       type: [
         {
           type: mongoose.Schema.Types.ObjectId,
           ref: 'WaterflowMeter'
         }
       ],
-      validate: [arrayDeviceLimit, `{PATH} exceeds the limit of 249 meters.`]
+      validate: [arrayMeterLimit, `{PATH} exceeds the limit of 249 meters.`]
     },
     topic: {
       type: String,
-      required: true,
-      validate: {
-        validator: function (v) {
-          return /^([^/]+)\/([^/]+)\/([^/]+)\/([^/]+)$/.test(v)
-        },
-        message: props => `${props.value} is not a valid topic structure!`
-      }
+      required: true
     }
   },
   {
@@ -48,7 +48,7 @@ gatewaySchema.virtual('id').get(function () {
   return this._id.toHexString()
 })
 
-function arrayDeviceLimit(val) {
+function arrayMeterLimit(val) {
   return val.length <= 249
 }
 

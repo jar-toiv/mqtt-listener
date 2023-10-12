@@ -2,7 +2,17 @@ import mongoose from 'mongoose'
 
 const locationSchema = new mongoose.Schema(
   {
-    locationId: String,
+    locationName: {
+      type: String,
+      required: true,
+      trim: true,
+      validate: {
+        validator: function (value) {
+          return typeof value === 'string' && value.trim().length > 0
+        },
+        message: props => `Invalid locationName provided: ${props.value}`
+      }
+    },
     siteId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Site'
@@ -26,6 +36,10 @@ const locationSchema = new mongoose.Schema(
     }
   }
 )
+
+locationSchema.virtual('id').get(function () {
+  return this._id.toHexString()
+})
 
 const Location = mongoose.model('Location', locationSchema)
 export default Location

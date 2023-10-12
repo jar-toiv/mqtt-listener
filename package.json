@@ -15,7 +15,8 @@
     "dotenv": "^16.3.1",
     "mongoose": "^7.5.3",
     "mqtt": "^5.0.5",
-    "validator": "^13.11.0"
+    "validator": "^13.11.0",
+    "winston": "^3.11.0"
   },
   "devDependencies": {
     "eslint-config-prettier": "^9.0.0",
