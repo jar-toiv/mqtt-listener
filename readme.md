@@ -49,4 +49,15 @@ katujenkatu-1/huone-201/teltonika-trb143-12345/waterflow
 
 # TODO
 
-fix schema names and referencing locate, gateway
+- Add SSL from Broker to all
+- Modify schema to reflect real sensor data and apply validators
+- Rename siteName/locationName to siteTopic/locationTopic ?
+- Create influxDB for historical keepings
+- Message que / buffer for message backlogs ?
+- EventEmitter for custom events and listeners
+- Secrets could use AWS secrets manager or HashiCorp Vault for creds
+- Add reconnect period from mqtt lib _reconnectPeriod_
+- Add process manager `pm2` to restart software --- bash run_app.sh
+- Critical alerts ex. PagerDuty or Opsgenie
+- Finish Broker
+- Start Nuxt 3
