@@ -1,5 +1,5 @@
 import Site from '../models/site.js'
-import logger from '../utils/logger.js'
+import { logger, loggerProcess } from '../utils/logger.js'
 
 const handleSite = async siteName => {
   //! Could be removed if no regex is used. Schema has validation
@@ -19,7 +19,7 @@ const handleSite = async siteName => {
     if (!siteDoc) {
       siteDoc = new Site({ siteName: siteName })
       await siteDoc.save()
-      logger.info(`Site: ${siteName} saved successfully.`)
+      loggerProcess.initProcess(`Site: ${siteName} saved successfully.`)
     }
 
     return siteDoc

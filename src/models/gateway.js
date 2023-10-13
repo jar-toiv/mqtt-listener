@@ -13,7 +13,7 @@ const gatewaySchema = new mongoose.Schema(
         message: props => `Invalid gatewayName provided: ${props.value}`
       }
     },
-    locationName: {
+    locationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Location'
     },

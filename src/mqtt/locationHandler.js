@@ -1,5 +1,5 @@
 import Location from '../models/location.js'
-import logger from '../utils/logger.js'
+import { logger, loggerProcess } from '../utils/logger.js'
 
 const handleLocation = async (locationName, siteDoc) => {
   try {
@@ -8,16 +8,16 @@ const handleLocation = async (locationName, siteDoc) => {
     if (!locationDoc) {
       locationDoc = new Location({
         locationName: locationName,
-        siteName: siteDoc._id
+        siteId: siteDoc._id
       })
 
       await locationDoc.save()
-      logger.info(`Location: ${locationName} saved successfully`)
+      loggerProcess.initProcess(`Location: ${locationName} saved successfully`)
 
       siteDoc.locationIds.push(locationDoc._id)
       await siteDoc.save()
 
-      logger.info(
+      loggerProcess.initProcess(
         `Location: ${locationName} linked to Site: ${siteDoc.siteName}.`
       )
     }

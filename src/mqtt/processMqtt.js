@@ -1,4 +1,4 @@
-import logger from '../utils/logger.js'
+import { logger, loggerProcess } from '../utils/logger.js'
 import handleSite from './siteHandler.js'
 import handleLocation from './locationHandler.js'
 import handleGateway from './gatewayHandler.js'
@@ -8,7 +8,7 @@ const topicUpdater = async (topic, message) => {
   try {
     const [siteName, locationName, gatewayName, meterName] = topic.split('/')
 
-    logger.info(
+    loggerProcess.process(
       `Processing site: ${siteName}, location: ${locationName}, gateway: ${gatewayName}, and meter: ${meterName}`
     )
 
@@ -17,7 +17,7 @@ const topicUpdater = async (topic, message) => {
     const gatewayDoc = await handleGateway(gatewayName, locationDoc, topic)
     await combinedHandler(meterName, gatewayDoc, message)
 
-    logger.info(
+    loggerProcess.process(
       `Finished processing site: ${siteName}, location: ${locationName}, gateway: ${gatewayName}, and meter: ${meterName}`
     )
   } catch (error) {

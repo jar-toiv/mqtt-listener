@@ -1,24 +1,23 @@
 import Gateway from '../models/gateway.js'
-import logger from '../utils/logger.js'
+import { logger, loggerProcess } from '../utils/logger.js'
 
 const handleGateway = async (gatewayName, locationDoc, topic) => {
   try {
     let gatewayDoc = await Gateway.findOne({ gatewayName: gatewayName })
-
     if (!gatewayDoc) {
       gatewayDoc = new Gateway({
         gatewayName: gatewayName,
-        locationName: locationDoc._id,
+        locationId: locationDoc._id,
         topic: topic
       })
 
       await gatewayDoc.save()
-      logger.info(`Gateway: ${gatewayName} saved succesfully`)
+      loggerProcess.initProcess(`Gateway: ${gatewayName} saved succesfully`)
 
       locationDoc.gatewayIds.push(gatewayDoc._id)
       await locationDoc.save()
 
-      logger.info(
+      loggerProcess.initProcess(
         `Gateway: ${gatewayName} linked to Location: ${locationDoc.locationName}.`
       )
     }

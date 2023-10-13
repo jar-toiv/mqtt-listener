@@ -1,3 +1,9 @@
+/**
+ * flanttenJsonData is able to flatten deeply nested JSON, it is not in use at the moment.
+ *
+ * Edit the maxDepth for wanted result
+ */
+
 function flanttenJsonData(obj, prefix = '', depth = 0, maxDepth = 10) {
   let flattened = {}
 

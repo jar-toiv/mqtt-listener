@@ -1,9 +1,9 @@
 import { WaterflowMeter } from '../models/waterflowMeter.js'
-import logger from '../utils/logger.js'
+import { logger, loggerProcess } from '../utils/logger.js'
 
 const jsonParser = message => {
   try {
-    return JSON.parse(message.toString()) //! ONKO TÄMÄ TURHA JOS MSG ON JSON xD
+    return JSON.parse(message.toString()) //! Remove JsonParser if publisher sends JSON
   } catch (error) {
     logger.error(`Failed to parse the message: ${message}`)
   }
@@ -26,7 +26,7 @@ const handleMeter = async (meterName, gatewayDoc, messageJSON) => {
       meterName: meterName,
       gatewayId: gatewayDoc._id
     })
-    logger.info(
+    loggerProcess.initProcess(
       `New meter ${meterName} initialized and linked to gateway ${gatewayDoc.gatewayName}.`
     )
   }
@@ -38,6 +38,9 @@ const handleMeter = async (meterName, gatewayDoc, messageJSON) => {
   try {
     await meterDoc.validate()
     await meterDoc.save()
+
+    gatewayDoc.meterIds.push(meterDoc._id)
+    await gatewayDoc.save()
   } catch (error) {
     if (error.name === 'ValidationError') {
       logger.error(`Validation Error: ${error.message}`)

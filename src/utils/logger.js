@@ -1,22 +1,26 @@
-import dotenv from 'dotenv'
 import winston from 'winston'
+import path from 'path'
+import dotenv from 'dotenv'
 
-dotenv.config()
-
+dotenv.config({ path: path.resolve('.env') })
 const { combine, timestamp, label, printf, colorize } = winston.format
 
 const logLevels = {
-  error: 0,
-  warn: 1,
-  info: 2,
-  debug: 3
+  debug: 0,
+  info: 1,
+  initProcess: 2,
+  process: 3,
+  warn: 4,
+  error: 5
 }
 
 const logColors = {
   error: 'red',
   warn: 'yellow',
   info: 'green',
-  debug: 'blue'
+  debug: 'blue',
+  process: 'magenta',
+  initProcess: 'cyan'
 }
 
 winston.addColors(logColors)
@@ -40,18 +44,44 @@ const logger = winston.createLogger({
     new winston.transports.File({
       filename: 'logs/error.log',
       level: 'error',
+      maxLevel: 'error',
       format: combine(timestamp(), customFormat),
-      handleExceptions: true
-    }),
-    new winston.transports.File({
-      filename: 'logs/combined.log',
-      format: combine(timestamp(), customFormat)
+      handleExceptions: false
     }),
     new winston.transports.File({
       filename: 'logs/warnings.log',
       level: 'warn',
+      maxLevel: 'warn',
       format: combine(timestamp(), customFormat),
-      handleExceptions: true
+      handleExceptions: false
+    })
+  ]
+})
+const loggerProcess = winston.createLogger({
+  levels: logLevels,
+  level: 'process',
+  format: combine(
+    label({ label: 'MQTT-Listener-Process' }),
+    timestamp({
+      format: 'YYYY-MM-DD HH:mm:ss'
+    }),
+    customFormat
+  ),
+  defaultMeta: { service: 'mqtt-listener-process' },
+  transports: [
+    new winston.transports.File({
+      filename: 'logs/process.log',
+      level: 'process',
+      maxLevel: 'process',
+      format: combine(timestamp(), customFormat),
+      handleExceptions: false
+    }),
+    new winston.transports.File({
+      filename: 'logs/initProcess.log',
+      level: 'initProcess',
+      maxLevel: 'initProcess',
+      format: combine(timestamp(), customFormat),
+      handleExceptions: false
     })
   ]
 })
@@ -59,8 +89,16 @@ const logger = winston.createLogger({
 if (process.env.NODE_ENV !== 'production') {
   logger.add(
     new winston.transports.Console({
+      level: 'error',
       format: combine(colorize({ all: true }), timestamp(), customFormat),
-      handleExceptions: true
+      handleExceptions: false
+    })
+  )
+  loggerProcess.add(
+    new winston.transports.Console({
+      level: 'process',
+      format: combine(colorize({ all: true }), timestamp(), customFormat),
+      handleExceptions: false
     })
   )
 }
@@ -76,4 +114,4 @@ logger.exceptions.handle(
   })
 )
 
-export default logger
+export { logger, loggerProcess }
