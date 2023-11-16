@@ -6,9 +6,10 @@ const locationSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      minlength: [1, 'locationName cannot be empty'],
       validate: {
         validator: function (value) {
-          return typeof value === 'string' && value.trim().length > 0
+          return typeof value === 'string'
         },
         message: props => `Invalid locationName provided: ${props.value}`
       }
@@ -36,6 +37,7 @@ const locationSchema = new mongoose.Schema(
     }
   }
 )
+locationSchema.index({ locationName: 1, siteId: 1 }, { unique: true })
 
 locationSchema.virtual('id').get(function () {
   return this._id.toHexString()
