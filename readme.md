@@ -17,47 +17,129 @@ katujenkatu-1/huone-201/teltonika-trb143-12345/waterflow
 ## PAYLOAD
 
 ```
+
 {
-  "meterId": "APT-MBUS-NA-10-1",
-  "meterDateTime": "2023-12-12T10:00:00.000Z",
-  "savedDateOfReadout": "2023-11-09T00:00:00.000Z",
-  "instantaneousVolume": 500.75,
-  "savedVolume": 200,
-  "measurementTime": 5,
-  "flowRate": 10.5,
-  "currentEventFlags": {
-    "maximumFlow": false,
-    "minimumFlow": false,
-    "reverseFlow": false,
-    "noFlow": true,
-    "leakage": false,
-    "deviceDisconnection": false,
-    "magneticFieldDetection": false,
-    "strongLightDetection": false,
-    "lowBattery": false,
-    "tipError": false,
-    "detectorFault": false,
-    "processorReset": false
-  },
-  "diagnostics": {
-    "optics": "Normal",
-    "oscillator": "Normal",
-    "powerSupply": "M-Bus"
-  }
+"MBusData": {
+"SlaveInformation": {
+"Id": 599079,
+"Manufacturer": "APA",
+"Version": 21,
+"ProductName": "",
+"Medium": "Water",
+"AccessNumber": 9,
+"Status": "FC",
+"Signature": 0
+},
+"DataRecord": [
+{
+"Function": "Instantaneous value",
+"StorageNumber": 0,
+"Unit": "Fabrication number",
+"Value": 599079,
+"Timestamp": "2023-10-01T01:21:32Z"
+},
+{
+"Function": "Instantaneous value",
+"StorageNumber": 0,
+"Unit": "Time Point (time &amp; date)",
+"Value": "2023-10-26T12:38:00",
+"Timestamp": "2023-10-01T01:21:32Z"
+},
+{
+"Function": "Instantaneous value",
+"StorageNumber": 0,
+"Unit": "Volume (m m^3)",
+"Value": 3,
+"Timestamp": "2023-10-01T01:21:32Z"
+},
+{
+"Function": "Instantaneous value",
+"StorageNumber": 0,
+"Unit": "Volume flow (m m^3/h)",
+"Value": 0,
+"Timestamp": "2023-10-01T01:21:32Z"
+},
+{
+"Function": "Instantaneous value",
+"StorageNumber": 1,
+"Unit": "Volume (m m^3)",
+"Value": 99999999,
+"Timestamp": "2023-10-01T01:21:32Z"
+},
+{
+"Function": "Instantaneous value",
+"StorageNumber": 1,
+"Unit": "Time Point (date)",
+"Value": "2000-06-01",
+"Timestamp": "2023-10-01T01:21:32Z"
+},
+{
+"Function": "Instantaneous value",
+"StorageNumber": 0,
+"Unit": "Operating time (days)",
+"Value": 186,
+"Timestamp": "2023-10-01T01:21:32Z"
+},
+{
+"Function": "Instantaneous value",
+"StorageNumber": 0,
+"Unit": "Error flags",
+"Value": 526095,
+"Timestamp": "2023-10-01T01:21:32Z"
+},
+{
+"Function": "Instantaneous value",
+"StorageNumber": 0,
+"Unit": "Manufacturer specific",
+"Value": 262400,
+"Timestamp": "2023-10-01T01:21:32Z"
+},
+{
+"Function": "Instantaneous value",
+"StorageNumber": 0,
+"Unit": "Manufacturer specific",
+"Value": 0,
+"Timestamp": "2023-10-01T01:21:32Z"
+},
+{
+"Function": "Instantaneous value",
+"StorageNumber": 0,
+"Unit": "Manufacturer specific",
+"Value": -5373945,
+"Timestamp": "2023-10-01T01:21:32Z"
+},
+{
+"Function": "Manufacturer specific",
+"Value": "00 01 29 24 FF 00 03 08 03 00",
+"Timestamp": "2023-10-01T01:21:32Z"
 }
+]
+}
+}
+
 ```
 
 # TODO
 
-- Add SSL from Broker to all
 - Modify schema to reflect real sensor data and apply validators
-- Rename siteName/locationName to siteTopic/locationTopic ?
-- Create influxDB for historical keepings
+- wait for successful mongoDB connection before taking in topic or message
 - Message que / buffer for message backlogs ?
 - EventEmitter for custom events and listeners
-- Secrets could use AWS secrets manager or HashiCorp Vault for creds
-- Add reconnect period from mqtt lib _reconnectPeriod_
-- Add process manager `pm2` to restart software --- bash run_app.sh
+- Add PROCESS MANAGER `pm2` to restart software --- bash run_app.sh
 - Critical alerts ex. PagerDuty or Opsgenie
-- Finish Broker
-- Start Nuxt 3
+- Finish readMe and documentation
+
+UUID
+
+- influx TOPIC ON datan ID ja message on sitten se data writePoint(point) - mongodb hae Idt ja lähetä influxiin
+- const getPoint = (measurement, tags, pointKey, pointValue, timestamp) => {
+  const point = new Point(measurement)
+  .tag('externalId', tags.externalId)
+  .tag('connectorId', tags.connectorId)
+  .tag('sourceId', tags.sourceId)
+  .floatField(pointKey, pointValue)
+  .timestamp(timestamp ? new Date(timestamp) : new Date());
+  return point;
+  };
+
+const measurement = 'conditions';
