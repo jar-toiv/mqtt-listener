@@ -6,9 +6,10 @@ const gatewaySchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      minlength: [1, 'gatewayName cannot be empty'],
       validate: {
         validator: function (value) {
-          return typeof value === 'string' && value.trim().length > 0
+          return typeof value === 'string'
         },
         message: props => `Invalid gatewayName provided: ${props.value}`
       }
