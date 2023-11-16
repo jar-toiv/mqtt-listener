@@ -3,7 +3,10 @@ import { logger, loggerProcess } from '../utils/logger.js'
 
 const handleLocation = async (locationName, siteDoc) => {
   try {
-    let locationDoc = await Location.findOne({ locationName: locationName })
+    let locationDoc = await Location.findOne({
+      locationName: locationName,
+      siteId: siteDoc._id
+    })
 
     if (!locationDoc) {
       locationDoc = new Location({
@@ -13,10 +16,15 @@ const handleLocation = async (locationName, siteDoc) => {
 
       await locationDoc.save()
       loggerProcess.initProcess(`Location: ${locationName} saved successfully`)
+    }
 
+    const isLocationLinked = siteDoc.locationIds.some(id =>
+      id.equals(locationDoc._id)
+    )
+
+    if (!isLocationLinked) {
       siteDoc.locationIds.push(locationDoc._id)
       await siteDoc.save()
-
       loggerProcess.initProcess(
         `Location: ${locationName} linked to Site: ${siteDoc.siteName}.`
       )
