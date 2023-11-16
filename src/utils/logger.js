@@ -33,7 +33,7 @@ const logger = winston.createLogger({
   levels: logLevels,
   level: process.env.LOG_LEVEL || 'debug',
   format: combine(
-    label({ label: 'MQTT-Listener' }),
+    label({ label: 'MQTT-Listener-Warning/Error' }),
     timestamp({
       format: 'YYYY-MM-DD HH:mm:ss'
     }),
