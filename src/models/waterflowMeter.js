@@ -13,9 +13,10 @@ const WaterflowSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      minlength: [1, 'meterName cannot be empty'],
       validate: {
         validator: function (value) {
-          return typeof value === 'string' && value.trim().length > 0
+          return typeof value === 'string'
         },
         message: props => `Invalid meterName provided: ${props.value}`
       }
@@ -37,24 +38,19 @@ const WaterflowSchema = new mongoose.Schema(
       default: 'waterflow'
     },
     meterDateTime: {
-      type: Date,
-      required: true
+      type: Date
     },
     savedDateOfReadout: {
-      type: Date,
-      required: true
+      type: Date
     },
     instantaneousVolume: {
-      type: Number,
-      required: true
+      type: Number
     },
     savedVolume: {
-      type: Number,
-      required: true
+      type: Number
     },
     measurementTime: {
-      type: Number,
-      required: true
+      type: Number
     },
     flowRate: {
       type: Number,
@@ -116,6 +112,7 @@ const WaterflowSchema = new mongoose.Schema(
     }
   }
 )
+
 WaterflowSchema.virtual('id').get(function () {
   return this._id.toHexString()
 })
@@ -130,7 +127,7 @@ WaterflowSchema.post('save', function (doc) {
       flags[flag] === true
     ) {
       logger.warn(
-        `ALERT: The flag for ${flag} is raised for Meter ID: ${meterId}`
+        `ALERT: The flag for ${flag} is raised for Meter ID: ${meterId}. Object ID: ${doc._id} `
       )
     }
   }
