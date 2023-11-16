@@ -4,6 +4,7 @@ import { logger, loggerProcess } from '../utils/logger.js'
 const handleGateway = async (gatewayName, locationDoc, topic) => {
   try {
     let gatewayDoc = await Gateway.findOne({ gatewayName: gatewayName })
+
     if (!gatewayDoc) {
       gatewayDoc = new Gateway({
         gatewayName: gatewayName,
@@ -12,14 +13,20 @@ const handleGateway = async (gatewayName, locationDoc, topic) => {
       })
 
       await gatewayDoc.save()
-      loggerProcess.initProcess(`Gateway: ${gatewayName} saved succesfully`)
+      loggerProcess.initProcess(`Gateway: ${gatewayName} saved successfully`)
 
-      locationDoc.gatewayIds.push(gatewayDoc._id)
-      await locationDoc.save()
-
-      loggerProcess.initProcess(
-        `Gateway: ${gatewayName} linked to Location: ${locationDoc.locationName}.`
+      const isGatewayLinked = locationDoc.gatewayIds.some(id =>
+        id.equals(locationDoc._id)
       )
+
+      if (!isGatewayLinked) {
+        locationDoc.gatewayIds.push(gatewayDoc._id)
+        await locationDoc.save()
+
+        loggerProcess.initProcess(
+          `Gateway: ${gatewayName} linked to Location: ${locationDoc.locationName}.`
+        )
+      }
     }
     return gatewayDoc
   } catch (error) {
