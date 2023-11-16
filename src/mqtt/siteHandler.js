@@ -2,17 +2,6 @@ import Site from '../models/site.js'
 import { logger, loggerProcess } from '../utils/logger.js'
 
 const handleSite = async siteName => {
-  //! Could be removed if no regex is used. Schema has validation
-  if (
-    typeof siteName !== 'string' ||
-    !siteName.trim() ||
-    !/^[a-z]+-\d+$/i.test(siteName)
-  ) {
-    const errMsg = `Invalid siteName provided: ${siteName}`
-    logger.error(errMsg)
-    throw new Error(errMsg)
-  }
-
   try {
     let siteDoc = await Site.findOne({ siteName: siteName })
 
