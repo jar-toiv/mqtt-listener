@@ -3,8 +3,10 @@ import handleSite from './siteHandler.js'
 import handleLocation from './locationHandler.js'
 import handleGateway from './gatewayHandler.js'
 import combinedHandler from './meterHandler.js'
+import influxHandler from './influxHandler.js'
+import getInfluxClient from '../utils/db/connectInfluxDb.js'
 
-const topicUpdater = async (topic, message) => {
+const mqttHandler = async (topic, message) => {
   try {
     const [siteName, locationName, gatewayName, meterName] = topic.split('/')
 
@@ -15,14 +17,22 @@ const topicUpdater = async (topic, message) => {
     const siteDoc = await handleSite(siteName)
     const locationDoc = await handleLocation(locationName, siteDoc)
     const gatewayDoc = await handleGateway(gatewayName, locationDoc, topic)
-    await combinedHandler(meterName, gatewayDoc, message)
+    const result = await combinedHandler(meterName, gatewayDoc, message)
+
+    let { success: success, meterDoc: meterDocument } = result
 
     loggerProcess.process(
       `Finished processing site: ${siteName}, location: ${locationName}, gateway: ${gatewayName}, and meter: ${meterName}`
     )
+    if (success === true) {
+      const influxClient = await getInfluxClient()
+      if (influxClient) {
+        influxHandler(message, meterDocument, influxClient)
+      }
+    }
   } catch (error) {
-    logger.error(`Error in topicUpdater: ${error.message}`)
+    logger.error(`Error in processMqtt: ${error.message}`)
   }
 }
 
-export default topicUpdater
+export default mqttHandler
