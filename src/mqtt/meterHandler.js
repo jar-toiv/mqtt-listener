@@ -5,30 +5,34 @@ const jsonParser = message => {
   try {
     return JSON.parse(message.toString())
   } catch (error) {
-    logger.error(`Failed to parse the message: ${message}`)
+    logger.error(
+      `Failed to parse the message: ${message}, Error: ${error.message}`
+    )
   }
   return { success: false, reason: 'Failed to parse message' }
 }
 
+const validateParams = (meterName, gatewayDoc, messageJSON) => {
+  let missingParams = []
+
+  if (!meterName) missingParams.push('meterName')
+  if (!gatewayDoc) missingParams.push('gatewayDoc')
+  if (!messageJSON) missingParams.push('messageJson')
+
+  return missingParams
+}
+
 const handleMeter = async (meterName, gatewayDoc, messageJSON) => {
   let meterId = messageJSON.MBusData.SlaveInformation.meterId
+  const missingParams = validateParams(meterName, gatewayDoc, messageJSON)
+
+  if (missingParams.length > 0) {
+    const missing = missingParams.join(', ')
+    logger.error(`Missing parameters: ${missing}`)
+    return { success: false, reason: `Missing parameters: ${missing}` }
+  }
+
   try {
-    const requiredParams = [
-      { key: 'meterName', value: meterName },
-      { key: 'gatewayDoc', value: gatewayDoc },
-      { key: 'messageJSON', value: messageJSON }
-    ]
-
-    const missingParams = requiredParams
-      .filter(param => !param.value)
-      .map(param => param.key)
-
-    if (missingParams.length > 0) {
-      const missing = missingParams.join(', ')
-      logger.error(`Missing parameters: ${missing}`)
-      // return { success: false, reason: `Missing parameters: ${missing}` }
-    }
-
     let meterDoc = await WaterflowMeter.findOne({
       meterId: meterId,
       gatewayId: gatewayDoc._id
@@ -69,7 +73,7 @@ const handleMeter = async (meterName, gatewayDoc, messageJSON) => {
     if (error.name === 'ValidationError') {
       logger.error(`Validation Error: ${error.message}`)
     } else {
-      const errMsg = `Error in meterHandler for MeterName ${meterName}: ${error.message}`
+      const errMsg = `Error in meterHandler for MeterName ${meterName}, Gateway ${gatewayDoc?.gatewayName}, Error: ${error.message}`
       logger.error(errMsg)
       return { success: false, reason: error.message }
     }
@@ -80,7 +84,13 @@ const combinedHandler = async (meterName, gatewayDoc, message) => {
   const messageJSON = jsonParser(message)
 
   if (messageJSON) {
-    return await handleMeter(meterName, gatewayDoc, messageJSON)
+    const result = await handleMeter(meterName, gatewayDoc, messageJSON)
+    if (result.success) {
+      return result
+    } else {
+      logger.error(`Handling meter failed: ${result.reason}`)
+      return result
+    }
   } else {
     return { success: false, reason: 'Failed to parse message' }
   }
