@@ -16,7 +16,7 @@ const handleGateway = async (gatewayName, locationDoc, topic) => {
       loggerProcess.initProcess(`Gateway: ${gatewayName} saved successfully`)
 
       const isGatewayLinked = locationDoc.gatewayIds.some(id =>
-        id.equals(locationDoc._id)
+        id.equals(gatewayDoc._id)
       )
 
       if (!isGatewayLinked) {
