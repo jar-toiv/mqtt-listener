@@ -19,13 +19,13 @@ const mqttHandler = async (topic, message) => {
     const gatewayDoc = await handleGateway(gatewayName, locationDoc, topic)
     const result = await combinedHandler(meterName, gatewayDoc, message)
 
-    let { success: success, meterDoc: meterDocument } = result
-
     loggerProcess.process(
       `Finished processing site: ${siteName}, location: ${locationName}, gateway: ${gatewayName}, and meter: ${meterName}`
     )
-    if (success === true) {
+    if (result.success) {
+      const meterDocument = result.meterDoc
       const influxClient = await getInfluxClient()
+
       if (influxClient) {
         influxHandler(message, meterDocument, influxClient)
       }
