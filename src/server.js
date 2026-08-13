@@ -1,8 +1,8 @@
-import { logger, loggerProcess } from './utils/logger.js'
 import app from './app.js'
+import { logger } from './utils/logger.js'
 
 import connectDb from './utils/db/connectDb.js'
-import connectInfluxDB from './utils/connectInfluxDb.js'
+import connectInfluxDB from './utils/db/connectInfluxDb.js'
 
 //¤ connectDb variables are enforced in config.js, but not connectInfluxDB
 const initializeDBs = async () => {

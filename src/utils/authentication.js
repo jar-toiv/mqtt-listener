@@ -1,8 +1,5 @@
 import { logger } from './logger.js'
-import path from 'path'
-import dotenv from 'dotenv'
 
-dotenv.config({ path: path.resolve('.env') })
 const { MQTT_USERNAME, MQTT_PASSWORD } = process.env
 
 if (!MQTT_USERNAME || !MQTT_PASSWORD) {

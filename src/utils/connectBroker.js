@@ -44,7 +44,7 @@ const connectBroker = () => {
 
   client.on('error', error => {
     logger.error(`MQTT Client Error: ${error.message}`)
-    handleReconnect()
+    handleReconnect(client)
   })
 
   client.on('offline', () => {

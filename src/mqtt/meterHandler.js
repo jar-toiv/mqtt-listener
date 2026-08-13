@@ -23,7 +23,7 @@ const validateParams = (meterName, gatewayDoc, messageJSON) => {
 }
 
 const handleMeter = async (meterName, gatewayDoc, messageJSON) => {
-  let meterId = messageJSON.MBusData.SlaveInformation.meterId
+  let meterId = messageJSON.meterId
   const missingParams = validateParams(meterName, gatewayDoc, messageJSON)
 
   if (missingParams.length > 0) {

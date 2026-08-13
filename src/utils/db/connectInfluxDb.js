@@ -9,11 +9,11 @@ const handleError = error => {
   const errorInfo =
     CONFIG.NODE_ENV === 'development'
       ? {
-          message: error.message,
-          name: error.name,
-          stack: error.stack,
-          code: error.code
-        }
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+        code: error.code
+      }
       : error.message
 
   logger.error('Error', errorInfo)
@@ -31,7 +31,7 @@ const performHealthCheck = async client => {
     if (client) {
       setTimeout(() => {
         performHealthCheck(client)
-      }, 1800000) // 30 min
+      }, 18000000) // 30 min
     }
   }
 }
