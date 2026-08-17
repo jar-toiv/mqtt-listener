@@ -241,6 +241,7 @@ src/
 
 ## Roadmap
 
+- Check meterId conflict in  `meterHandler.js`, same meter cannot be in two places.
 - Extend the `WaterflowMeter` schema to fully reflect real M-Bus sensor data with stricter validators.
 - Defer topic/message handling until MongoDB connection is confirmed.
 - Introduce a message queue/buffer to handle backlogs.
