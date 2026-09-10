@@ -21,12 +21,19 @@ const documentHandler = async (message, meterDocument) => {
 const influxHandler = async (message, meterDocument, influxClient) => {
   try {
     const points = await documentHandler(message, meterDocument)
-    const writeApi = influxClient.getWriteApi(org, bucket, 'ms')
+    const writeApi = influxClient.getWriteApi(org, bucket, 'ms', {
+      writeSuccess: lines => {
+        loggerProcess.process(`InfluxDB confirmed write: ${lines.join(' | ')}`)
+      },
+      writeFailed: (error, lines) => {
+        logger.error(
+          `InfluxDB rejected write: ${error.message} — lines: ${lines.join(' | ')}`
+        )
+      }
+    })
 
     writeApi.writePoint(points)
     await writeApi.close()
-
-    loggerProcess.process('Data written to InfluxDB')
   } catch (error) {
     logger.error(`Error in influxHandler: ${error.message}`, error)
   }

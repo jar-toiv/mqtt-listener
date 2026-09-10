@@ -5,6 +5,8 @@ import CONFIG from '../config.js'
 
 const { INFLUXDB_TOKEN: token, INFLUXDB_HOST: url } = CONFIG
 
+let influxClient = null
+
 const handleError = error => {
   const errorInfo =
     CONFIG.NODE_ENV === 'development'
@@ -19,7 +21,7 @@ const handleError = error => {
   logger.error('Error', errorInfo)
 }
 
-const performHealthCheck = async client => {
+const performHealthCheck = async () => {
   try {
     const response = await axios.get(`${url}/health`)
     if (response.status !== 200) {
@@ -28,11 +30,6 @@ const performHealthCheck = async client => {
     loggerProcess.process('InfluxDB health check passed')
   } catch (error) {
     handleError(error)
-    if (client) {
-      setTimeout(() => {
-        performHealthCheck(client)
-      }, 18000000) // 30 min
-    }
   }
 }
 
@@ -43,15 +40,17 @@ const connectInfluxDB = async () => {
   }
 
   try {
-    const client = new InfluxDB({ url, token })
-    await performHealthCheck(client)
-    setInterval(() => performHealthCheck(client), 600000)
+    influxClient = new InfluxDB({ url, token })
+    await performHealthCheck()
+    setInterval(performHealthCheck, 60000)
 
-    return client
+    return influxClient
   } catch (error) {
     handleError(error)
     return null
   }
 }
+
+export const getInfluxClient = () => influxClient
 
 export default connectInfluxDB

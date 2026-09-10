@@ -4,7 +4,7 @@ import handleLocation from './locationHandler.js'
 import handleGateway from './gatewayHandler.js'
 import combinedHandler from './meterHandler.js'
 import influxHandler from './influxHandler.js'
-import getInfluxClient from '../utils/db/connectInfluxDb.js'
+import { getInfluxClient } from '../utils/db/connectInfluxDb.js'
 
 const mqttHandler = async (topic, message) => {
   try {
