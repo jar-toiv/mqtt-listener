@@ -68,7 +68,7 @@ katujenkatu-1/huone-201/teltonika-trb143-12345/waterflow
 
 ### Raw M-Bus structure (reference)
 
-M-Bus devices natively report readings in a nested structure like the one below. This is **not** what the listener receives — it's shown here for reference on where the values originate:
+M-Bus devices natively report readings in a nested structure like the one below. This is **not** what the listener receives. It's shown here for reference on where the values originate:
 
 ```json
 {
@@ -138,14 +138,14 @@ The Teltonika TRB143 gateway flattens the raw M-Bus record into a JSON object wh
 }
 ```
 
-`meterHandler.js` copies every top-level key from this payload directly onto the meter document (`meterDoc[key] = messageJSON[key]`), so any field present here that matches the schema is persisted as-is. Note `reverseFlow: true` above — this is the exact condition that triggers the `WaterflowMeter` post-save `warn` alert described in [Data Model](#data-model).
+`meterHandler.js` copies every top-level key from this payload directly onto the meter document (`meterDoc[key] = messageJSON[key]`), so any field present here that matches the schema is persisted as-is. Note `reverseFlow: true`, this is the exact condition that triggers the `WaterflowMeter` post-save `warn` alert described in [Data Model](#data-model).
 
 ## Prerequisites
 
 - Node.js (ES modules, `"type": "module"`)
 - Access to an MQTT broker (TLS)
 - MongoDB instance
-- InfluxDB instance (optional — the service degrades gracefully if unavailable)
+- InfluxDB instance 
 
 ## Installation
 
@@ -170,7 +170,9 @@ Environment variables are loaded via `dotenv` from `.env.development` or `.env.p
 | `INFLUXDB_BUCKET` | No | InfluxDB bucket to write points to. |
 | `LOG_LEVEL` | No | Winston log level (defaults to `debug`). |
 
-`NODE_ENV`, `MQTT_GATEWAY_URI`, and `MONGO_URI` are validated at startup in [config.js](src/utils/config.js); the process throws if any are missing. `MQTT_USERNAME`/`MQTT_PASSWORD` are validated in [authentication.js](src/utils/authentication.js) and exit the process if missing. InfluxDB variables are optional — a missing InfluxDB connection is logged but does not stop the service.
+`NODE_ENV`, `MQTT_GATEWAY_URI`, and `MONGO_URI` are validated at startup in [config.js](src/utils/config.js); the process throws if any are missing.
+`MQTT_USERNAME`/`MQTT_PASSWORD` are validated in [authentication.js](src/utils/authentication.js) and exit the process if missing.
+InfluxDB variables are optional — a missing InfluxDB connection is logged but does not stop the service.
 
 ## Running the Service
 
@@ -184,7 +186,7 @@ npm run dev
 
 On startup the service:
 1. Connects to MongoDB (exits the process on failure).
-2. Attempts to connect to InfluxDB and runs a periodic health check every 10 minutes (failure is logged, not fatal).
+2. Attempts to connect to InfluxDB and runs a periodic health check every 60 seconds (failure is logged, not fatal).
 3. Connects to the MQTT broker, subscribes to all topics, and begins processing messages.
 
 MQTT reconnection is handled automatically up to 3 retries (5s apart) before the process exits.
@@ -208,7 +210,7 @@ Console output (with colorized formatting) is enabled additionally when `NODE_EN
 ```
 src/
 ├── app.js                    # Boots the MQTT broker connection
-├── server.js                 # Entry point — initializes DBs then the app
+├── server.js                 # Entry point
 ├── models/                   # Mongoose schemas
 │   ├── site.js
 │   ├── location.js
@@ -224,7 +226,7 @@ src/
 └── utils/
     ├── config.js             # Loads and validates environment configuration
     ├── authentication.js     # Validates MQTT credentials
-    ├── connectBroker.js      # MQTT client connection + reconnect logic
+    ├── connectBroker.js      # MQTT client connection
     ├── logger.js             # Winston logger configuration
     └── db/
         ├── connectDb.js          # MongoDB connection
@@ -233,11 +235,11 @@ src/
 
 ## Error Handling
 
-- **Malformed payloads**: caught in `meterHandler.js`'s JSON parser; the message is dropped and logged.
+- **Malformed payloads**: caught in `meterHandler.js`'s JSON parser. The message is dropped and logged.
 - **Missing parameters**: `meterHandler.js` validates `meterName`, `gatewayDoc`, and the parsed payload before writing.
 - **Mongoose validation errors**: caught per-handler and logged distinctly from other errors (e.g. invalid `connection` type, meter array exceeding 249 entries).
-- **MQTT connection loss**: automatic reconnect with a capped retry count; the process exits after exhausting retries.
-- **InfluxDB unavailability**: connection failures and failed health checks are logged; writing to InfluxDB is skipped rather than blocking MQTT processing.
+- **MQTT connection loss**: automatic reconnect with a capped retry count. The process exits after exhausting retries.
+- **InfluxDB unavailability**: connection failures and failed health checks are logged. Writing to InfluxDB is skipped rather than blocking MQTT processing.
 
 ## Roadmap
 
