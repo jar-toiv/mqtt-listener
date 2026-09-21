@@ -5,11 +5,11 @@ import mongoose from 'mongoose'
 dns.setServers(['1.1.1.1', '8.8.8.8'])
 
 const shutdown = async () => {
-  logger.warning('Shutting down the application...')
+  logger.warn('Shutting down the application...')
 
   try {
     await mongoose.connection.close()
-    logger.warning('Database connection closed.')
+    logger.warn('Database connection closed.')
   } catch (err) {
     logger.error('Error, closing the database connection:', err)
   }
