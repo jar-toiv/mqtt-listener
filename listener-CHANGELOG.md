@@ -1,6 +1,9 @@
 # Changelog — listener
 
 ## 2026-08-10
+- Shutdown() called non-exsistent `logger-warning`, causing a TypeError and preventing clean exit when the MongoDB connection failed.
+
+## 2026-08-10
 
 ### Local dev support
 Same `NODE_ENV`-based split as broker, applied to `config.js`:
