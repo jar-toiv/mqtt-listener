@@ -1,111 +1,47 @@
-# MQTT M-Bus Listener
+# mqtt-listener
 
-A Node.js service that subscribes to an MQTT broker, ingests M-Bus sensor readings (waterflow meters) published by field gateways, persists the entity hierarchy (Site → Location → Gateway → Meter) to MongoDB, and writes time-series measurements to InfluxDB.
+A proof of concept MQTT listener for a small IoT telemetry pipeline. It subscribes to an MQTT broker, reads water meter readings from the messages, and stores them in MongoDB and InfluxDB. This is not production code.
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Data Model](#data-model)
-- [MQTT Topic Structure](#mqtt-topic-structure)
-- [Message Payload](#message-payload)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Running the Service](#running-the-service)
-- [Logging](#logging)
-- [Project Structure](#project-structure)
-- [Error Handling](#error-handling)
-- [Roadmap](#roadmap)
-- [License](#license)
-
-## Overview
-
-The listener connects to an MQTT broker over TLS and subscribes to all topics (`#`). Each incoming message represents a reading from an M-Bus waterflow sensor, relayed through a gateway (e.g. a Teltonika TRB143 router) that **flattens the M-Bus payload into JSON** before publishing it. For every message the service:
-
-1. Parses the topic to identify the site, location, gateway, and meter.
-2. Upserts the corresponding documents in MongoDB, maintaining parent/child references between them.
-3. Validates and stores the meter reading on the meter document.
-4. Writes the reading as a point to InfluxDB for time-series analysis.
-
-## Architecture
+The listener is the second of four services. Two of the others are in their own repositories, and the fourth is a local server that feeds demo data.
 
 ```
-MQTT Broker
-    │  (TLS, topic: site/location/gateway/meter)
-    ▼
-connectBroker.js  ──► processMqtt.js
-                          │
-                          ├─► siteHandler.js      ──► MongoDB (Site)
-                          ├─► locationHandler.js  ──► MongoDB (Location)
-                          ├─► gatewayHandler.js   ──► MongoDB (Gateway)
-                          ├─► meterHandler.js     ──► MongoDB (WaterflowMeter)
-                          └─► influxHandler.js    ──► InfluxDB (measurement_waterflow)
+MQTT client  -->  mqtt-broker  -->  mqtt-listener  -->  MongoDB + InfluxDB  -->  mqtt-sensor-dashboard
 ```
 
-Each handler upserts its own document and links it to its parent (e.g. a Location is pushed onto its Site's `locationIds` array), building a navigable hierarchy: **Site → Location → Gateway → Meter**.
+- [mqtt-broker](https://github.com/jar-toiv/mqtt-broker) receives the messages and passes them on.
+- [mqtt-sensor-dashboard](https://github.com/jar-toiv/mqtt-sensor-dashboard) shows the stored readings in the browser.
 
-## Data Model
+The demo data is Apator water meter readings, captured as JSON through a Teltonika TRB143 gateway. Both devices were bought for testing.
 
-| Model | Collection | Key Fields |
-|---|---|---|
-| `Site` | `sites` | `siteName`, `locationIds[]` |
-| `Location` | `locations` | `locationName`, `siteId`, `gatewayIds[]` (unique on `locationName` + `siteId`) |
-| `Gateway` | `gateways` | `gatewayName`, `locationId`, `topic`, `meterIds[]` (max 249 meters) |
-| `WaterflowMeter` | `meters` | `meterId`, `meterName`, `gatewayId`, `connection`, `savedVolume`, `flowRate`, `currentEventFlags`, `diagnostics` |
+## Status
 
-`WaterflowMeter` raises a `warn`-level alert whenever any `currentEventFlags` (e.g. `leakage`, `lowBattery`, `reverseFlow`) is `true` after a save.
+- Works locally. A meter payload published with MQTT.fx has gone through the whole chain to MongoDB Atlas and InfluxDB Cloud.
+- No live device is connected at the moment.
+- There are no automated tests.
 
-## MQTT Topic Structure
+## What it does
 
-Topics are expected in the form `<site>/<location>/<gateway>/<meter>`:
+For every MQTT message the listener does four things.
+
+1. Splits the topic into site, location, gateway and meter.
+2. Creates the site, location and gateway documents in MongoDB if they do not exist, and links each one to its parent.
+3. Parses the JSON payload, validates it and saves it on the meter document.
+4. Writes the saved volume to InfluxDB as a time-series point.
+
+A warning is logged when any event flag on a meter is `true`, for example `leakage` or `reverseFlow`.
+
+## Topic
+
+Topics have four parts.
 
 ```
+<site>/<location>/<gateway>/<meter>
 katujenkatu-1/huone-201/teltonika-trb143-12345/waterflow
 ```
 
-## Message Payload
+## Payload
 
-### Raw M-Bus structure (reference)
-
-M-Bus devices natively report readings in a nested structure like the one below. This is **not** what the listener receives. It's shown here for reference on where the values originate:
-
-```json
-{
-  "MBusData": {
-    "SlaveInformation": {
-      "Id": 599079,
-      "Manufacturer": "APA",
-      "Version": 21,
-      "ProductName": "",
-      "Medium": "Water",
-      "AccessNumber": 9,
-      "Status": "FC",
-      "Signature": 0
-    },
-    "DataRecord": [
-      {
-        "Function": "Instantaneous value",
-        "StorageNumber": 0,
-        "Unit": "Volume (m m^3)",
-        "Value": 3,
-        "Timestamp": "2023-10-01T01:21:32Z"
-      },
-      {
-        "Function": "Instantaneous value",
-        "StorageNumber": 0,
-        "Unit": "Volume flow (m m^3/h)",
-        "Value": 0,
-        "Timestamp": "2023-10-01T01:21:32Z"
-      }
-    ]
-  }
-}
-```
-
-### Flattened payload (as received by the listener)
-
-The Teltonika TRB143 gateway flattens the raw M-Bus record into a JSON object whose keys map directly onto the `WaterflowMeter` schema fields (see [waterflowMeter.js](src/models/waterflowMeter.js)). This is the actual MQTT message body `meterHandler.js` parses and writes to MongoDB:
+The gateway sends the reading as flat JSON. The keys match the fields of the meter schema in [waterflowMeter.js](src/models/waterflowMeter.js).
 
 ```json
 {
@@ -117,18 +53,9 @@ The Teltonika TRB143 gateway flattens the raw M-Bus record into a JSON object wh
   "measurementTime": 5,
   "flowRate": 10.5,
   "currentEventFlags": {
-    "maximumFlow": false,
-    "minimumFlow": false,
     "reverseFlow": true,
-    "noFlow": false,
     "leakage": false,
-    "meterDisconnection": false,
-    "magneticFieldDetection": false,
-    "strongLightDetection": false,
-    "lowBattery": false,
-    "tipError": false,
-    "detectorFault": false,
-    "processorReset": false
+    "lowBattery": false
   },
   "diagnostics": {
     "optics": "Normal",
@@ -138,119 +65,122 @@ The Teltonika TRB143 gateway flattens the raw M-Bus record into a JSON object wh
 }
 ```
 
-`meterHandler.js` copies every top-level key from this payload directly onto the meter document (`meterDoc[key] = messageJSON[key]`), so any field present here that matches the schema is persisted as-is. Note `reverseFlow: true`, this is the exact condition that triggers the `WaterflowMeter` post-save `warn` alert described in [Data Model](#data-model).
+The schema has twelve event flags. Three are shown here.
 
-## Prerequisites
+## Data model
 
-- Node.js (ES modules, `"type": "module"`)
-- Access to an MQTT broker (TLS)
-- MongoDB instance
-- InfluxDB instance 
+| Model | Collection | Key fields |
+|-------|------------|------------|
+| `Site` | `sites` | `siteName`, `locationIds[]` |
+| `Location` | `locations` | `locationName`, `siteId`, `gatewayIds[]`. Unique on `locationName` and `siteId`. |
+| `Gateway` | `gateways` | `gatewayName`, `locationId`, `topic`, `meterIds[]`. At most 249 meters. |
+| `WaterflowMeter` | `meters` | `meterId`, `meterName`, `gatewayId`, `connection`, `savedVolume`, `flowRate`, `currentEventFlags`, `diagnostics` |
 
-## Installation
+## Running locally
+
+You need a running MQTT broker, a MongoDB database and, if you want time-series data, an InfluxDB instance.
 
 ```bash
+# Install dependencies
 npm install
-```
 
-## Configuration
-
-Environment variables are loaded via `dotenv` from `.env.development` or `.env.production`, selected by `NODE_ENV`.
-
-| Variable | Required | Description |
-|---|---|---|
-| `NODE_ENV` | Yes | `development` or `production` — selects the env file and logging behavior. |
-| `MQTT_GATEWAY_URI` | Yes | MQTT broker connection URI. |
-| `MQTT_USERNAME` | Yes | MQTT broker username. |
-| `MQTT_PASSWORD` | Yes | MQTT broker password. |
-| `MONGO_URI` | Yes | MongoDB connection string. |
-| `INFLUXDB_HOST` | No | InfluxDB base URL. |
-| `INFLUXDB_TOKEN` | No | InfluxDB API token. |
-| `INFLUXDB_ORGANIZATION` | No | InfluxDB organization. |
-| `INFLUXDB_BUCKET` | No | InfluxDB bucket to write points to. |
-| `LOG_LEVEL` | No | Winston log level (defaults to `debug`). |
-
-`NODE_ENV`, `MQTT_GATEWAY_URI`, and `MONGO_URI` are validated at startup in [config.js](src/utils/config.js); the process throws if any are missing.
-`MQTT_USERNAME`/`MQTT_PASSWORD` are validated in [authentication.js](src/utils/authentication.js) and exit the process if missing.
-InfluxDB variables are optional — a missing InfluxDB connection is logged but does not stop the service.
-
-## Running the Service
-
-```bash
-# Production
-npm start
-
-# Development (auto-restart via nodemon)
+# Start the listener in development mode
 npm run dev
 ```
 
-On startup the service:
-1. Connects to MongoDB (exits the process on failure).
-2. Attempts to connect to InfluxDB and runs a periodic health check every 60 seconds (failure is logged, not fatal).
-3. Connects to the MQTT broker, subscribes to all topics, and begins processing messages.
+Before the first run, create a file named `.env.development` in the project root. See the next section.
 
-MQTT reconnection is handled automatically up to 3 retries (5s apart) before the process exits.
+When the listener is running, the console shows lines like these.
+
+```
+Successfully connected to the database
+Connected to broker @ mqtt://127.0.0.1:1883
+Subscribed to all topics
+```
+
+## Environment variables
+
+Example `.env.development`.
+
+```env
+NODE_ENV=development
+MQTT_GATEWAY_URI=mqtt://127.0.0.1:1883
+MQTT_USERNAME=
+MQTT_PASSWORD=
+MONGO_URI=
+INFLUXDB_HOST=
+INFLUXDB_TOKEN=
+INFLUXDB_ORGANIZATION=
+INFLUXDB_BUCKET=
+```
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `NODE_ENV` | Yes | `development` or `production`. Selects `.env.development` or `.env.production`. |
+| `MQTT_GATEWAY_URI` | Yes | Address of the MQTT broker. |
+| `MQTT_USERNAME`, `MQTT_PASSWORD` | Yes | Credentials for the broker. |
+| `MONGO_URI` | Yes | MongoDB connection string. |
+| `INFLUXDB_HOST`, `INFLUXDB_TOKEN` | No | InfluxDB address and API token. Without them the listener runs and skips InfluxDB. |
+| `INFLUXDB_ORGANIZATION`, `INFLUXDB_BUCKET` | No | Where the points are written. |
+
+A missing required variable stops the process at start-up with an error that names it.
 
 ## Logging
 
-Logging is implemented with [Winston](src/utils/logger.js) using custom levels (`debug`, `info`, `initProcess`, `process`, `warn`, `error`) written to rotating file transports under [logs/](logs/):
+Logs are written with Winston to files under `logs/`.
 
 | File | Content |
-|---|---|
+|------|---------|
 | `logs/error.log` | Errors |
-| `logs/warnings.log` | Warnings (e.g. meter alert flags) |
-| `logs/process.log` | Runtime processing events |
-| `logs/initProcess.log` | First-time entity creation events |
+| `logs/warnings.log` | Warnings, for example meter event flags |
+| `logs/process.log` | Processing events |
+| `logs/initProcess.log` | First-time creation of sites, locations, gateways and meters |
 | `logs/exceptions.log` | Uncaught exceptions |
 
-Console output (with colorized formatting) is enabled additionally when `NODE_ENV !== production`.
+In development mode the same events are also printed to the console.
 
-## Project Structure
+## Project structure
 
 ```
 src/
-├── app.js                    # Boots the MQTT broker connection
-├── server.js                 # Entry point
+├── server.js                 # entry point, connects the databases and the broker
+├── app.js                    # starts the broker connection
 ├── models/                   # Mongoose schemas
 │   ├── site.js
 │   ├── location.js
 │   ├── gateway.js
 │   └── waterflowMeter.js
 ├── mqtt/
-│   ├── processMqtt.js        # Orchestrates the per-message handler pipeline
-│   ├── siteHandler.js        # Upserts Site documents
-│   ├── locationHandler.js    # Upserts Location documents, links to Site
-│   ├── gatewayHandler.js     # Upserts Gateway documents, links to Location
-│   ├── meterHandler.js       # Parses payload, upserts Meter, links to Gateway
-│   └── influxHandler.js      # Writes a data point to InfluxDB
+│   ├── processMqtt.js        # runs the handlers for each message
+│   ├── siteHandler.js
+│   ├── locationHandler.js
+│   ├── gatewayHandler.js
+│   ├── meterHandler.js       # parses the payload and saves the meter
+│   └── influxHandler.js      # writes a point to InfluxDB
 └── utils/
-    ├── config.js             # Loads and validates environment configuration
-    ├── authentication.js     # Validates MQTT credentials
-    ├── connectBroker.js      # MQTT client connection
-    ├── logger.js             # Winston logger configuration
+    ├── config.js             # loads the env file and checks required variables
+    ├── authentication.js     # checks the MQTT credentials
+    ├── connectBroker.js      # MQTT client
+    ├── logger.js             # Winston loggers
     └── db/
         ├── connectDb.js          # MongoDB connection
-        └── connectInfluxDb.js    # InfluxDB connection + health checks
+        └── connectInfluxDb.js    # InfluxDB connection and health check
 ```
 
-## Error Handling
+## Error handling
 
-- **Malformed payloads**: caught in `meterHandler.js`'s JSON parser. The message is dropped and logged.
-- **Missing parameters**: `meterHandler.js` validates `meterName`, `gatewayDoc`, and the parsed payload before writing.
-- **Mongoose validation errors**: caught per-handler and logged distinctly from other errors (e.g. invalid `connection` type, meter array exceeding 249 entries).
-- **MQTT connection loss**: automatic reconnect with a capped retry count. The process exits after exhausting retries.
-- **InfluxDB unavailability**: connection failures and failed health checks are logged. Writing to InfluxDB is skipped rather than blocking MQTT processing.
+- A payload that is not valid JSON or fails schema validation is logged and not stored.
+- The MQTT client reconnects automatically when the connection drops.
+- If the MongoDB connection fails at start-up, the process exits.
+- If InfluxDB is not available, the error is logged and the listener keeps running.
 
-## Roadmap
+## Known limitations
 
-- Check meterId conflict in  `meterHandler.js`, same meter cannot be in two places.
-- Extend the `WaterflowMeter` schema to fully reflect real M-Bus sensor data with stricter validators.
-- Defer topic/message handling until MongoDB connection is confirmed.
-- Introduce a message queue/buffer to handle backlogs.
-- Emit custom events via `EventEmitter` for downstream listeners.
-- Run under a process manager (`pm2`) for automatic restarts.
-- Integrate critical alerting (e.g. PagerDuty, Opsgenie) for meter fault flags.
+- Only the saved volume is written to InfluxDB, and the point gets the time the listener received it, not the meter's own timestamp.
+- A reading with a flow rate of 0 fails schema validation and is not stored.
+- Messages can arrive before the MongoDB connection is ready.
+- The same meter id can exist under two gateways.
 
-## License
+## Licence
 
 ISC
